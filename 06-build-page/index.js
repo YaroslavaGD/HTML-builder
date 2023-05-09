@@ -33,18 +33,38 @@ async function createFolder() {
   }
 }
 
+async function copyAssetsFiles(sourcePath, destinationPath) {
+  try {
+    const files = await fs.promises.readdir(sourcePath,  { withFileTypes: true });
+    console.log("copy file or folder");
+    console.log(files);
+    files.forEach(file => {
+      if (file.isDirectory()) {
+        fs.promises.mkdir(path.resolve(destinationPath, file.name), {recursive: true});
+        copyAssetsFiles(
+          path.resolve(sourcePath, file.name),
+          path.resolve(destinationPath, file.name)
+        );
+      } else if (file.isFile()) {
+        const sourceFilePath = path.resolve(sourcePath, file.name);
+        const destinationFilePath = path.resolve(destinationPath, file.name);
+        fs.promises.copyFile(sourceFilePath, destinationFilePath);
+      }
+    });
+
+  } catch (err) {
+    throw err;
+  }
+}
+
 async function buildPage() {
   try {
     await deleteFolder();
     await createFolder();
+    await copyAssetsFiles(assetsPath, resultAssetsPath);
   } catch (err) {
     console.log("main err : " + err);
   }
-}
-
-
-async function copyAssetsFiles() {
-
 }
 
 buildPage();
