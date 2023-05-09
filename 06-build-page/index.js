@@ -7,7 +7,6 @@ const assetsPath = path.join(__dirname, 'assets');
 const resultAssetsPath = path.join(resultFolderPath, 'assets');
 
 const componentsPath = path.join(__dirname, 'components');
-// const resultComponentsPath = path.join(resultFolderPath, 'components');
 
 const stylesPath = path.join(__dirname, 'styles');
 const resultStylesPath = path.join(resultFolderPath, 'style.css');
@@ -57,11 +56,39 @@ async function copyAssetsFiles(sourcePath, destinationPath) {
   }
 }
 
+async function mergeStyles() {
+  try {
+    const resultFile = fs.createWriteStream(resultStylesPath);
+    const files = await fs.promises.readdir(stylesPath, { withFileTypes: true });
+
+    files.forEach(file => {
+      if (file.isFile()) {
+        let filePath = path.resolve(stylesPath, file.name);
+        let fileName = path.basename(filePath);
+        let fileExtension = path.extname(filePath);
+
+        if (fileExtension === '.css') {
+          const sourceFile = fs.createReadStream(
+            path.resolve(stylesPath, fileName)
+          );
+  
+          sourceFile.on('data', data => {
+            resultFile.write(data.toString() + '\n');
+          });
+        }
+      }
+    });
+  } catch (err) {
+    throw err;
+  }
+}
+
 async function buildPage() {
   try {
     await deleteFolder();
     await createFolder();
-    await copyAssetsFiles(assetsPath, resultAssetsPath);
+    copyAssetsFiles(assetsPath, resultAssetsPath);
+    mergeStyles();
   } catch (err) {
     console.log("main err : " + err);
   }
