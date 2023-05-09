@@ -6,13 +6,14 @@ const resultFolderPath = path.join(__dirname, 'project-dist');
 const assetsPath = path.join(__dirname, 'assets');
 const resultAssetsPath = path.join(resultFolderPath, 'assets');
 
-const componentsPath = path.join(__dirname, 'components');
 
 const stylesPath = path.join(__dirname, 'styles');
 const resultStylesPath = path.join(resultFolderPath, 'style.css');
 
 
+const componentsPath = path.join(__dirname, 'components');
 const templateHtmlPath = path.join(__dirname, 'template.html');
+const resultHtmlPath = path.join(resultFolderPath, 'index.html');
 
 async function deleteFolder() {
   try {
@@ -35,8 +36,7 @@ async function createFolder() {
 async function copyAssetsFiles(sourcePath, destinationPath) {
   try {
     const files = await fs.promises.readdir(sourcePath,  { withFileTypes: true });
-    console.log("copy file or folder");
-    console.log(files);
+    
     files.forEach(file => {
       if (file.isDirectory()) {
         fs.promises.mkdir(path.resolve(destinationPath, file.name), {recursive: true});
@@ -83,14 +83,47 @@ async function mergeStyles() {
   }
 }
 
+async function createIndexHTML() {
+  const resultHtml = fs.createWriteStream(resultHtmlPath, 'utf-8');
+  const files = await fs.promises.readdir(componentsPath, {withFileTypes: true});
+
+  const componentsData = [];
+
+  for (let file of files) {
+    const filePath = path.join(__dirname, 'components', file.name);
+    let fileName = path.basename(filePath);
+    let fileExtension = path.extname(filePath);
+
+    if (fileExtension === '.html') {
+      const componentName = fileName.replace(fileExtension, '');
+      const componentValue = (await fs.promises.readFile(filePath)).toString();
+
+      componentsData.push({
+        name: componentName,
+        value: componentValue
+      });
+    }
+  }
+
+  const templateHtml = (await fs.promises.readFile(templateHtmlPath)).toString();
+  let currentTemplateHtml = templateHtml;
+
+  componentsData.forEach(component => {
+    currentTemplateHtml = currentTemplateHtml.replaceAll(`{{${component.name}}}`, component.value);
+  });
+
+  resultHtml.write(currentTemplateHtml, 'utf-8');
+}
+
 async function buildPage() {
   try {
     await deleteFolder();
     await createFolder();
     copyAssetsFiles(assetsPath, resultAssetsPath);
     mergeStyles();
+    createIndexHTML();
   } catch (err) {
-    console.log("main err : " + err);
+    console.log(err);
   }
 }
 
