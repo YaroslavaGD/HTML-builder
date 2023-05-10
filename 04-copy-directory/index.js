@@ -22,7 +22,6 @@ async function copyFolder() {
     }
   }
   
-  
   async function createFolder() {
     try {
       await fs.promises.mkdir(path.join(__dirname, 'files-copy'), {recursive: true})

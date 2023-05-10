@@ -1,28 +1,27 @@
-const { stdin, stdout} = require("process");
 const fs = require('fs');
 const path = require('path');
 
+const secretFolderPath = path.join(__dirname, 'secret-folder');
 
-const openDir = fs.promises.readdir(
+async function getFolderInfo() {
+  const files =  await fs.promises.readdir(secretFolderPath, { withFileTypes: true }); 
+  
+  for (const file of files) {
+    if (file.isFile()) {
+      const filePath = path.join(secretFolderPath, file.name);
 
-  path.join(__dirname, 'secret-folder'),
-  { withFileTypes: true }
+      let fileName = path.basename(filePath);
+      let fileExtension = path.extname(filePath);
 
-).then( files => { 
-
-    files.forEach( file => {
-      if (!file.isDirectory()) {
-        let filePath = path.join(__dirname, 'secret-folder', file.name);
-        let fileName = path.basename(filePath);
-        let fileExtension = path.extname(filePath);
+      fileName = fileName.replace(fileExtension, '');
+      fileExtension = fileExtension.replace('.', '');
+      
+      const statResult = await fs.promises.stat(filePath);
+    
+      console.log(fileName + ' - ' + fileExtension + ' - ' + statResult.size + 'b');
         
-        fs.promises.stat(filePath).then(result => {
+    }
+  }
+}
 
-          fileName = fileName.replace(fileExtension, '');
-          fileExtension = fileExtension.replace('.', '');
-          console.log(fileName + ' - ' + fileExtension + ' - ' + result.size + 'b');
-        });
-      }
-    });
-
-});
+getFolderInfo();
